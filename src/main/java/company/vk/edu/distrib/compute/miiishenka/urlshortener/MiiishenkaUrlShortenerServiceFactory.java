@@ -1,0 +1,12 @@
+package company.vk.edu.distrib.compute.miiishenka.urlshortener;
+
+import java.io.IOException;
+
+import company.vk.edu.distrib.compute.AbstractHttpServiceFactory;
+
+public class MiiishenkaUrlShortenerServiceFactory extends AbstractHttpServiceFactory<MiiishenkaUrlShortenerService> {
+    @Override
+    protected MiiishenkaUrlShortenerService doCreate(int port) throws IOException {
+        return new MiiishenkaUrlShortenerService(port);
+    }
+}
