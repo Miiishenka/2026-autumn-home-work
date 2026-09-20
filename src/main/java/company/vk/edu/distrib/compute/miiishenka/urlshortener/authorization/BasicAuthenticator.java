@@ -11,6 +11,8 @@ import company.vk.edu.distrib.compute.miiishenka.urlshortener.exception.Unauthor
 public class BasicAuthenticator {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BASIC_PREFIX = "Basic ";
+    private static final int CREDENTIAL_PARTS_COUNT = 2;
+
     private final Dao<String> usersDao;
 
     public BasicAuthenticator(Dao<String> usersDao) {
@@ -27,8 +29,8 @@ public class BasicAuthenticator {
         if (credentials == null) {
             throw new UnauthorizedException();
         }
-        String[] parts = credentials.split(":", 2);
-        if (parts.length != 2) {
+        String[] parts = credentials.split(":", CREDENTIAL_PARTS_COUNT);
+        if (parts.length != CREDENTIAL_PARTS_COUNT) {
             throw new UnauthorizedException();
         }
         String user = parts[0];
