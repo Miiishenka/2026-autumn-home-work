@@ -1,6 +1,7 @@
 package company.vk.edu.distrib.compute.miiishenka.kv;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -23,11 +24,11 @@ public class MiiishenkaRemoteDao implements Dao<String> {
     public String get(String key) throws NoSuchElementException, IllegalArgumentException, IOException {
         HttpRequest request = HttpRequest.newBuilder(getUri(key)).GET().build();
         HttpResponse<String> response = send(request);
-        if (response.statusCode() == 200) {
+        if (response.statusCode() == HttpURLConnection.HTTP_OK) {
             return response.body();
         }
 
-        if (response.statusCode() == 404) {
+        if (response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
             throw new NoSuchElementException();
         }
 
@@ -40,11 +41,11 @@ public class MiiishenkaRemoteDao implements Dao<String> {
                 .PUT(HttpRequest.BodyPublishers.ofString(value, StandardCharsets.UTF_8))
                 .build();
         HttpResponse<String> response = send(request);
-        if (response.statusCode() == 201) {
+        if (response.statusCode() == HttpURLConnection.HTTP_CREATED) {
             return;
         }
 
-        if (response.statusCode() == 400) {
+        if (response.statusCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
             throw new IllegalArgumentException();
         }
 
@@ -55,11 +56,11 @@ public class MiiishenkaRemoteDao implements Dao<String> {
     public void delete(String key) throws IllegalArgumentException, IOException {
         HttpRequest request = HttpRequest.newBuilder(getUri(key)).DELETE().build();
         HttpResponse<String> response = send(request);
-        if (response.statusCode() == 202) {
+        if (response.statusCode() == HttpURLConnection.HTTP_ACCEPTED) {
             return;
         }
 
-        if (response.statusCode() == 400) {
+        if (response.statusCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
             throw new IllegalArgumentException();
         }
 
