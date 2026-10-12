@@ -38,7 +38,7 @@ public class MiiishenkaKVService implements KVService {
             server.setExecutor(executor);
         }
 
-        entityDao = PersistentDao.byteArrayDao("/tmp/miiishenka-entities");
+        entityDao = PersistentDao.byteArrayDao("/tmp/miiishenka-entities-" + port);
         List<BaseKVController> controllers = List.of(
             new StatusController(),
             new EntityController(entityDao)
