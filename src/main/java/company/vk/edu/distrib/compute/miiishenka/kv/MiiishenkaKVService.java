@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.sun.net.httpserver.HttpServer;
 import company.vk.edu.distrib.compute.Dao;
@@ -21,6 +22,7 @@ public class MiiishenkaKVService implements KVService {
     private final HttpServer server;
     private final Dao<byte[]> entityDao;
     private final ExecutorService executor;
+    private final AtomicBoolean ready = new AtomicBoolean();
 
     public MiiishenkaKVService(int port) throws IOException {
         server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -40,7 +42,7 @@ public class MiiishenkaKVService implements KVService {
 
         entityDao = PersistentDao.byteArrayDao("/tmp/miiishenka-entities");
         List<BaseKVController> controllers = List.of(
-            new StatusController(),
+            new StatusController(ready::get),
             new EntityController(entityDao)
         );
         controllers.forEach(
@@ -51,10 +53,12 @@ public class MiiishenkaKVService implements KVService {
     @Override
     public void start() {
         server.start();
+        ready.set(true);
     }
 
     @Override
     public void stop() {
+        ready.set(false);
         try (entityDao) {
             server.stop(1);
         } catch (IOException e) {
