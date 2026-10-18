@@ -1,11 +1,19 @@
 package company.vk.edu.distrib.compute.miiishenka.kv.controller;
 
 import java.io.IOException;
+import java.util.function.BooleanSupplier;
 
 import com.sun.net.httpserver.HttpExchange;
 import company.vk.edu.distrib.compute.miiishenka.http.exception.HttpStatusException;
 
 public class StatusController extends BaseKVController {
+    private final BooleanSupplier isReady;
+
+    public StatusController(BooleanSupplier isReady) {
+        super();
+        this.isReady = isReady;
+    }
+
     @Override
     public String getPath() {
         return "/v0/status";
@@ -14,6 +22,6 @@ public class StatusController extends BaseKVController {
     @Override
     public void get(HttpExchange exchange) throws HttpStatusException, IOException {
         validateExactPath(exchange);
-        exchange.sendResponseHeaders(200, 0);
+        exchange.sendResponseHeaders(isReady.getAsBoolean() ? 200 : 503, 0);
     }
 }
