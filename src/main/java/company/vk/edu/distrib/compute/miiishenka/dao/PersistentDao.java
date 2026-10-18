@@ -9,6 +9,8 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import company.vk.edu.distrib.compute.Dao;
@@ -17,6 +19,7 @@ public class PersistentDao<T> implements Dao<T> {
     private final String fileName;
     private final Map<String, T> storage;
     private final Function<T, String> serialize;
+    private final Lock persistenceLock = new ReentrantLock();
 
     public PersistentDao(
             String fileName,
@@ -63,20 +66,35 @@ public class PersistentDao<T> implements Dao<T> {
     }
 
     @Override
-    public synchronized void upsert(String key, T value) throws IllegalArgumentException, IOException {
-        storage.put(key, value);
-        persist();
+    public void upsert(String key, T value) throws IllegalArgumentException, IOException {
+        persistenceLock.lock();
+        try {
+            storage.put(key, value);
+            persist();
+        } finally {
+            persistenceLock.unlock();
+        }
     }
 
     @Override
-    public synchronized void delete(String key) throws IllegalArgumentException, IOException {
-        storage.remove(key);
-        persist();
+    public void delete(String key) throws IllegalArgumentException, IOException {
+        persistenceLock.lock();
+        try {
+            storage.remove(key);
+            persist();
+        } finally {
+            persistenceLock.unlock();
+        }
     }
 
     @Override
-    public synchronized void close() throws IOException {
-        persist();
+    public void close() throws IOException {
+        persistenceLock.lock();
+        try {
+            persist();
+        } finally {
+            persistenceLock.unlock();
+        }
     }
 
     private void persist() throws IOException {
