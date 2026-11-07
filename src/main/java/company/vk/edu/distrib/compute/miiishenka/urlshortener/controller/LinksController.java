@@ -10,7 +10,6 @@ import com.sun.net.httpserver.HttpExchange;
 import company.vk.edu.distrib.compute.Dao;
 import company.vk.edu.distrib.compute.miiishenka.urlshortener.authorization.BasicAuthenticator;
 import company.vk.edu.distrib.compute.miiishenka.http.exception.HttpStatusException;
-import company.vk.edu.distrib.compute.miiishenka.http.exception.NotFoundException;
 import company.vk.edu.distrib.compute.miiishenka.http.exception.UnprocessableContentException;
 
 public class LinksController extends BaseUrlShortenerController {
@@ -38,9 +37,6 @@ public class LinksController extends BaseUrlShortenerController {
         basicAuthenticator.authenticate(exchange);
         String shortId = extractShortId(exchange);
         String longLink = linksDao.get(shortId);
-        if (longLink == null) {
-            throw new NotFoundException();
-        }
         exchange.getResponseHeaders().add("Content-Type", "text/html; charset=utf-8");
         exchange.sendResponseHeaders(200, 0);
         exchange.getResponseBody().write(longLink.getBytes(StandardCharsets.UTF_8));
@@ -64,10 +60,7 @@ public class LinksController extends BaseUrlShortenerController {
         basicAuthenticator.authenticate(exchange);
         String shortId = extractShortId(exchange);
         String newLongLink = readLongLink(exchange);
-        String oldLongLink = linksDao.get(shortId);
-        if (oldLongLink == null) {
-            throw new NotFoundException();
-        }
+        linksDao.get(shortId);
         linksDao.upsert(shortId, newLongLink);
         exchange.sendResponseHeaders(200, 0);
     }

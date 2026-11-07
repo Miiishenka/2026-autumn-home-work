@@ -2,10 +2,15 @@ package company.vk.edu.distrib.compute.miiishenka.dao;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Base64;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import company.vk.edu.distrib.compute.Dao;
@@ -14,6 +19,7 @@ public class PersistentDao<T> implements Dao<T> {
     private final String fileName;
     private final Map<String, T> storage;
     private final Function<T, String> serialize;
+    private final Lock persistenceLock = new ReentrantLock();
 
     public PersistentDao(
             String fileName,
@@ -52,28 +58,70 @@ public class PersistentDao<T> implements Dao<T> {
 
     @Override
     public T get(String key) throws NoSuchElementException, IllegalArgumentException, IOException {
-        return storage.get(key);
+        T value = storage.get(key);
+        if (value == null) {
+            throw new NoSuchElementException("No value for key: " + key);
+        }
+        return value;
     }
 
     @Override
     public void upsert(String key, T value) throws IllegalArgumentException, IOException {
-        storage.put(key, value);
+        persistenceLock.lock();
+        try {
+            storage.put(key, value);
+            persist();
+        } finally {
+            persistenceLock.unlock();
+        }
     }
 
     @Override
     public void delete(String key) throws IllegalArgumentException, IOException {
-        storage.remove(key);
+        persistenceLock.lock();
+        try {
+            storage.remove(key);
+            persist();
+        } finally {
+            persistenceLock.unlock();
+        }
     }
 
     @Override
     public void close() throws IOException {
-        try (RandomAccessFile file = new RandomAccessFile(fileName, "rw")) {
-            file.setLength(0);
-            file.writeInt(storage.size());
-            for (var entry : storage.entrySet()) {
-                file.writeUTF(entry.getKey());
-                file.writeUTF(serialize.apply(entry.getValue()));
+        persistenceLock.lock();
+        try {
+            persist();
+        } finally {
+            persistenceLock.unlock();
+        }
+    }
+
+    private void persist() throws IOException {
+        Path target = Path.of(fileName).toAbsolutePath();
+        Path temporary = Files.createTempFile(
+                target.getParent(),
+                target.getFileName().toString(),
+                ".tmp"
+        );
+
+        try {
+            try (RandomAccessFile file = new RandomAccessFile(temporary.toFile(), "rw")) {
+                file.writeInt(storage.size());
+                for (var entry : storage.entrySet()) {
+                    file.writeUTF(entry.getKey());
+                    file.writeUTF(serialize.apply(entry.getValue()));
+                }
+                file.getFD().sync();
             }
+            Files.move(
+                    temporary,
+                    target,
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING
+            );
+        } finally {
+            Files.deleteIfExists(temporary);
         }
     }
 }

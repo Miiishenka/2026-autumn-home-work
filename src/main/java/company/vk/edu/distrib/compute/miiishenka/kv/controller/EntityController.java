@@ -5,7 +5,6 @@ import java.io.IOException;
 import com.sun.net.httpserver.HttpExchange;
 import company.vk.edu.distrib.compute.Dao;
 import company.vk.edu.distrib.compute.miiishenka.http.exception.HttpStatusException;
-import company.vk.edu.distrib.compute.miiishenka.http.exception.NotFoundException;
 
 public class EntityController extends BaseKVController {
     private final Dao<byte[]> dao;
@@ -24,10 +23,6 @@ public class EntityController extends BaseKVController {
     public void get(HttpExchange exchange) throws HttpStatusException, IOException {
         String id = extractId(exchange);
         byte[] value = dao.get(id);
-        if (value == null) {
-            throw new NotFoundException();
-        }
-
         exchange.sendResponseHeaders(200, 0);
         exchange.getResponseBody().write(value);
     }
